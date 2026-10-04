@@ -1,0 +1,14 @@
+{
+  "resolution": 0.5,
+  "conductor_layers": ["3"],
+  "insulator_layers": ["1"],
+  "release_layer": "4",
+  "pads": {"DRIVE": [0, 650], "GND": [500, 650]},
+  "probes": [
+    {"name": "shuttle plate centre",         "xy": [0, 0],          "expect": "GND"},
+    {"name": "moving finger (first)",        "xy": [-170, 180],     "expect": "GND"},
+    {"name": "fixed finger (first)",         "xy": [-180, 190],     "expect": "DRIVE"},
+    {"name": "right anchor / field",         "xy": [800, 0],        "expect": "GND"},
+    {"name": "electrode bus",                "xy": [0, 300],        "expect": "DRIVE"}
+  ]
+}
