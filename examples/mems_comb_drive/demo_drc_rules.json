@@ -1,0 +1,11 @@
+[
+  {"name": "SI min line width >= 2 um",        "rule": "minimumSize",            "layer": 3, "value": 2,   "merge": true},
+  {"name": "SI min etched gap >= 2 um",        "rule": "minimumElementDistance", "layer": 3, "value": 2,   "merge": true},
+  {"name": "METAL min width >= 3 um",          "rule": "minimumSize",            "layer": 2, "value": 3,   "merge": true},
+  {"name": "METAL min space >= 3 um",          "rule": "minimumElementDistance", "layer": 2, "value": 3,   "merge": true},
+  {"name": "TRENCH min width >= 3 um",         "rule": "minimumSize",            "layer": 1, "value": 3,   "merge": true},
+  {"name": "TRENCH min space >= 3 um",         "rule": "minimumElementDistance", "layer": 1, "value": 3,   "merge": true},
+  {"name": "BACK min feature >= 200 um",       "rule": "minimumSize",            "layer": 4, "value": 200, "merge": true},
+  {"name": "SI encloses METAL by >= 3 um",     "rule": "minimumEnclosure",       "layer": 3, "layer2": 2, "value": 3},
+  {"name": "METAL to TRENCH space >= 3 um",    "rule": "minimumDistance",        "layer": 1, "layer2": 2, "value": 3}
+]

@@ -38,7 +38,7 @@ def style_for(data, lay, i):
     name = info.get("name", "layer %s" % lay)
     col = info.get("color")
     face = "#%02x%02x%02x" % tuple(col) if col else PALETTE[i % len(PALETTE)]
-    outline = any(k in name.upper() for k in ("REF", "NOTE", "DIE", "EDGE", "BOUNDARY"))
+    outline = any(k in name.upper() for k in ("REF", "NOTE", "DIE", "EDGE", "BOUNDARY", "BORDER"))
     return name, face, outline
 
 

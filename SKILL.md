@@ -1,19 +1,23 @@
 ---
-name: layout-skill
-description: Script, export, verify and preview mask layouts (GDSII) headlessly with juspertor LayoutEditor's LayoutScript Python API (layouteditor.com — not KLayout). Use when asked to draw or generate a layout with LayoutEditor, write LayoutScript Python, produce GDS from code, run LayoutEditor DRC, check electrical connectivity/isolation or mechanical release of a layout, render layout previews, or design MEMS/SOI masks (isolation trenches, metal, front DRIE, backside cavity). Includes verified API quirks and the free-license export limits.
+name: LayoutEditor-skill
+description: Script, export, verify, prepare and preview mask layouts (GDSII, OASIS, DXF) headlessly with juspertor LayoutEditor's LayoutScript Python API (layouteditor.com — not KLayout). Covers 4 core domains: (1) layout data prep (inspection, format conversion, layer remapping, multi-GDS merging, and boolean layer operations); (2) Silicon Photonics (PIC) waveguide circuits (Euler bends, S-bends, MZI, ring resonators, grating couplers); (3) wafer/reticle multi-die assembly with dicing streets and alignment marks; (4) parametric MEMS/SOI mask generation without booleans. Includes verified API quirks and free-license limits.
 license: MIT
 compatibility: Requires juspertor LayoutEditor (https://layouteditor.com/download.html) — its bundled Python provides the LayoutScript module — plus Python 3.8+ with numpy, Pillow and matplotlib for analysis/previews, and a shell to run scripts. Agent-agnostic (Agent Skills format). Verified on macOS; Linux/Windows follow the same API.
 metadata:
   author: laull9
-  version: "1.0.0"
+  version: "0.2.0"
   tested-layouteditor: "20260920"
 ---
 
-# LayoutEditor headless layout
+# LayoutEditor headless layout (v0.2)
 
-Generate layouts from Python with LayoutEditor's bundled interpreter, export GDS, then verify
-(design rules, connectivity, release, physics sanity) and render previews, with no GUI. The tools are
-generic. The bundled demo (a MEMS comb-actuator test chip) shows every technique end to end.
+Automate mask-layout generation, preparation, wafer assembly and verification with LayoutEditor's bundled Python interpreter (no GUI required).
+
+Four primary workflows (ordered by daily usage frequency):
+1. **Layout data preparation and boolean operations**: inspect cell hierarchies and layer distributions, convert between GDS/DXF/OASIS, remap layers, safely merge external GDS files without naming collisions, and execute batch layer booleans / sizing.
+2. **Integrated Silicon Photonics (PIC)**: draw low-loss Euler bends, cosine S-bends, directional couplers, ring resonators, MZI filters, and fiber grating couplers.
+3. **Wafer and Reticle assembly**: arrange multiple dies across wafers (4/6/8-inch) or reticles with automated dicing streets, cross marks, and area utilization analysis.
+4. **Parametric MEMS/SOI masks**: generate comb actuators, cantilevers, isolation trenches, and run headless DRC / raster connectivity / release verification.
 
 ## 0. Locate the interpreter
 
@@ -21,81 +25,47 @@ generic. The bundled demo (a MEMS comb-actuator test chip) shows every technique
 scripts/find_layouteditor.sh
 ```
 
-This prints the bundled Python that can `import LayoutScript` (on macOS:
-`/Applications/layout.app/Contents/MacOS/Frameworks/Python.framework/Versions/3.x/bin/python3.x`).
-Generators, `drc_check.py` and `le_helpers.LE` must run with it. Analysis scripts
-(`check_connectivity.py`, `render_preview.py`) need a normal CPython with numpy, Pillow and
-matplotlib, which LayoutEditor's Python lacks.
+Generators, `layout_prep.py`, `wafer_assembly.py`, `layer_boolean.py`, `drc_check.py` and `le_helpers.LE` run with LayoutEditor's bundled Python.
+Analysis and rendering scripts (`check_connectivity.py`, `render_preview.py`) use a standard Python 3 with numpy, Pillow and matplotlib.
 
-If LayoutEditor is not installed, ask the user to install it from the official site
-(<https://layouteditor.com/download.html>; the free edition is enough). See `README.md` → *Install LayoutEditor*.
-If the interpreter is elsewhere, set `LE_PY=/path/to/python` or `LAYOUTEDITOR_HOME=/install/dir`.
-
-Smoke test the whole tool chain (about 10 s):
-
+Smoke tests for all workflows:
 ```bash
-examples/run_demo.sh /tmp/le_demo
+examples/mask_prep/run_prep_demo.sh /tmp/le_prep       # Data prep, conversion & boolean instance
+examples/photonic_circuit/run_pic_demo.sh /tmp/le_pic   # Silicon Photonics instance
+examples/wafer_assembly/run_assembly.sh /tmp/le_wafer  # Multi-die wafer assembly instance
+examples/mems_comb_drive/run_mems.sh /tmp/le_mems      # MEMS comb-drive instance (or examples/run_demo.sh)
 ```
 
-Expected result: DRC 0 violations, pads isolated, all probes OK, previews written.
+## 1. Operating rules and license boundary
 
-## 1. Non-negotiable rules
+1. **Free license GDS export gate**: on the free edition, using `booleanTool` or `copyLayerSized` locks subsequent GDS export (saving writes a cloud-only `.lec` instead). Designs exceeding ~8k–10k elements trigger the same gate.
+   - For free-edition generator workflows: draw final shapes analytically using `le_helpers.py` (light-field "drawn = kept", keyhole polygons, offset+clip trench rings).
+   - For licensed or intermediate analysis steps: use `scripts/layer_boolean.py` or `le.layer_boolean()`.
+2. **Export check**: always verify the file exists on disk after export (`LE.save_gds()` does this automatically).
+3. **Rotation is clockwise**: `strans.rotate()` is clockwise. `LE.ref(..., ang)` accepts CCW degrees and handles inversion.
+4. **1-D arrays only**: `addCellrefArray` is reliable only for 1-D arrays (`ny = 1`).
+5. **Headless screenshots**: native `saveScreenshot` produces blank images headlessly. Always render previews using `scripts/render_preview.py` from the JSON dump.
+6. **Mask text**: use `le_helpers.dot_text` (DRC-safe 5×7 dot font).
+7. **Units**: LayoutEditor database unit is 1 nm (`1e-09 m`). Write all Python coordinates in µm (float).
 
-1. **Free license: no `booleanTool` in a script that exports GDS.** After a boolean on a
-   non-trivial design, `saveFile("*.gds")` silently writes a cloud-only `.lec` instead. Draw final
-   mask shapes directly (light-field "drawn = kept" layers, keyhole field polygons, offset+clip
-   trench rings). Never re-import boolean results into a fresh layout to dodge the check; that
-   circumvents the license. Details: `references/free-version-limits.md`.
-2. **Always check the export**: `LE.save_gds()` raises if the `.gds` was not written.
-3. **Rotation is clockwise** in `strans.rotate()`. `LE.ref(..., ang)` takes CCW degrees and handles it.
-4. **Arrays**: only 1-D (`ny = 1`) `addCellrefArray` is reliable. Flatten with `drawing.flatAll()`
-   (`cell.flatSelect()` skips arrays).
-5. **No headless screenshots**: they come out blank. Render from the JSON dump instead.
-6. **Mask text**: use `le_helpers.dot_text` (DRC-safe). The built-in text→polygon glyphs have
-   sub-µm spikes.
-7. **Units**: 1 dbu = 1 nm. Write geometry in µm (floats). `LE` converts.
-8. **Do not save after flattening or analysis** in the same session.
+## 2. Tool directory
 
-## 2. Workflow
-
-1. **Pin down the source geometry before drawing.** Collect every dimension from the user's
-   verified model (FEM/COMSOL screenshots, papers, spreadsheets, scripts). Back-fit missing values
-   from verified results (for example, layer thickness from a simulated resonance) rather than
-   guessing. List what is still assumed. Ask the user when a choice changes the physics.
-2. **Parameterise**: one dict `P` in µm at the top of the generator. Derive drawn sizes from
-   targets and process bias (lines `+2·bias`, gaps `−2·bias`). Keep magic numbers out of the code.
-3. **Choose layers and polarity** (`references/mems-soi-process.md` for SOI MEMS): number,
-   name, colour, and "drawn = etched/kept" for each mask. Put reference outlines and notes on
-   non-mask layers.
-4. **Generate** with `scripts/le_helpers.py`. Start from `examples/demo_chip.py`.
-   - Unit cells (finger, beam, mark) → 1-D arrays → sub-assemblies → top. Design unit cells to be
-     symmetric so that rotation alone covers all placements.
-   - Use `round_poly`/`dogbone`/`rrect_half`/`field_halves`/`insert_windows`/`trench_ring` for
-     filleted, hole-free, boolean-free geometry (`references/geometry-techniques.md`).
-5. **Export and dump**: `le.save_gds(path)`, then `le.dump_flat_json(path_json, meta=...)`.
-6. **Verify**. Do all four and fix until clean (`references/verification.md`):
-   - `drc_check.py <gds> <TOP> rules.json` (LayoutEditor drcTool; exit 1 on violations; prints coordinates).
-   - `check_connectivity.py polys.json probes.json` (nets, isolation, released parts).
-   - A physics sanity check of key figures computed from the *drawn* dimensions (frequency,
-     stiffness, capacitance…) against the user's simulation.
-   - `render_preview.py polys.json outdir views.json`, then **look at the zoom views yourself**:
-     gaps, fillets, trench ends, mark clearances, labels.
-7. **Report**: what was built, the verification results (with numbers), and the remaining
-   assumptions or decisions the user must confirm. Keep the generator re-runnable and document how.
-
-## 3. Files
-
-| Path | Purpose |
+| Script | Purpose |
 |---|---|
-| `scripts/le_helpers.py` | Geometry (fillets, offsets, clipping, dog-bone beams, keyhole windows, trench rings, dot font) + `LE` session wrapper + `comb_row` + JSON dump |
-| `scripts/drc_check.py` | DRC with LayoutEditor's drcTool from a JSON rule list |
-| `scripts/check_connectivity.py` | Raster connectivity/isolation/release check from a JSON probe list |
-| `scripts/render_preview.py` | Overview, per-layer and zoom PNGs from the JSON dump |
-| `scripts/find_layouteditor.sh` | Print the bundled interpreter path |
-| `examples/demo_chip.py` + `demo_*.json` + `run_demo.sh` | End-to-end reference implementation |
-| `references/layoutscript-api.md` | Verified API signatures, idioms, quirks |
-| `references/free-version-limits.md` | What the free license allows, the export gate, compliant workarounds |
-| `references/geometry-techniques.md` | How to draw fillets, rings, holes, combs and text without booleans |
-| `references/mems-soi-process.md` | SOI-MEMS mask conventions, design rules, isolation and routing, marks, test structures |
-| `references/verification.md` | DRC rule sets, connectivity method, analytic checks, review checklist |
-| `references/troubleshooting.md` | Symptom → cause → fix |
+| `scripts/le_helpers.py` | Geometry (fillets, offsets, keyhole field, trench rings, dot font) + `LE` session wrapper + layer boolean/sizing hooks |
+| `scripts/photonic_helpers.py` | PIC geometry (straight, cosine S-bends, Euler bends, linear tapers, directional couplers, ring resonators, MZI, grating couplers) |
+| `scripts/layout_prep.py` | Inspect layout structure, convert formats (GDS/OASIS/DXF/CIF), remap layers, merge multi-GDS layouts with cell prefixing |
+| `scripts/wafer_assembly.py` | Wafer-level (4/6/8-in) and reticle tiling, dicing street generation, cross marks, silicon utilization reporting |
+| `scripts/layer_boolean.py` | Batch layer difference, union, intersection, xor and sizing |
+| `scripts/drc_check.py` | Run LayoutEditor's built-in `drcTool` from JSON rule configurations |
+| `scripts/check_connectivity.py` | High-resolution raster netlist, electrical isolation and mechanical release verification |
+| `scripts/render_preview.py` | Headless multi-layer and zoomed window PNG preview rendering |
+| `scripts/find_layouteditor.sh` | Locate LayoutEditor's bundled Python interpreter across platforms |
+
+## 3. Workflows and references
+
+- **MEMS / Sensor design**: see `references/mems-soi-process.md` and `references/geometry-techniques.md`. Reference implementation: `examples/mems_comb_drive/` and `examples/demo_chip.py`.
+- **Silicon Photonics (PIC)**: see `references/photonic-layout.md`. Reference implementation: `examples/photonic_circuit/`.
+- **Wafer Assembly and Data Prep**: see `references/data-prep-and-assembly.md`. Reference implementation: `examples/wafer_assembly/` and `examples/mask_prep/`.
+- **Layer Booleans**: see `references/boolean-workflow.md` and `references/free-version-limits.md`.
+- **Verification**: see `references/verification.md`.

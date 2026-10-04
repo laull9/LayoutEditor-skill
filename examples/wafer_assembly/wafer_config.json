@@ -1,0 +1,18 @@
+{
+  "title": "MPW_RETICLE_ASSEMBLY",
+  "wafer_diameter_mm": 26.0,
+  "edge_exclusion_mm": 1.0,
+  "dicing_street_width_um": 100.0,
+  "street_layer": 11,
+  "wafer_boundary_layer": 11,
+  "mark_layer": 11,
+  "dies": [
+    {
+      "name": "MEMS_CHIP",
+      "width_um": 2000.0,
+      "height_um": 2000.0,
+      "gds_path": "examples/mems_comb_drive/out/demo_chip.gds",
+      "cell_name": "DEMO_CHIP"
+    }
+  ]
+}

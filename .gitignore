@@ -1,4 +1,4 @@
-examples/out/
+examples/*/out/
 __pycache__/
 *.pyc
 *.lec

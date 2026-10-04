@@ -1,0 +1,68 @@
+{
+  "title": "Demo comb-actuator chip",
+  "order": [
+    "4",
+    "3",
+    "2",
+    "1",
+    "32",
+    "31",
+    "11"
+  ],
+  "hide_in_overview": [
+    "31"
+  ],
+  "views": [
+    {
+      "name": "core",
+      "title": "Shuttle, flexures, comb and electrode island",
+      "window": [
+        -560,
+        560,
+        -260,
+        460
+      ]
+    },
+    {
+      "name": "comb",
+      "title": "Comb: equal gaps on both sides of every moving finger",
+      "window": [
+        -200,
+        -120,
+        140,
+        230
+      ]
+    },
+    {
+      "name": "flexure_root",
+      "title": "Flexure drawn as one polygon with integral R15 root fillets",
+      "window": [
+        440,
+        540,
+        -60,
+        60
+      ]
+    },
+    {
+      "name": "trench_stub",
+      "title": "Island trench ring: ends stop 5 um inside the etched region",
+      "window": [
+        170,
+        300,
+        140,
+        270
+      ]
+    },
+    {
+      "name": "marks",
+      "title": "Alignment mark and CD test window",
+      "window": [
+        -880,
+        760,
+        -760,
+        880
+      ],
+      "notes": false
+    }
+  ]
+}

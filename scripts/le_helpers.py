@@ -13,7 +13,7 @@ Two layers:
 
 Usage from a generator script run with LayoutEditor's Python:
 
-    import sys, os; sys.path.insert(0, "/path/to/layout-skill/scripts")
+    import sys, os; sys.path.insert(0, "/path/to/LayoutEditor-skill/scripts")
     from le_helpers import *
     le = LE(top="MY_CHIP", layers={1: ("M1_TRENCH", (230, 80, 60)), 3: ("M3_SI", (40, 140, 230))})
     le.poly(le.top, rect(0, 0, 100, 50), 3)
@@ -347,6 +347,9 @@ FONT = {
     "9": [".###.", "#...#", "#...#", ".####", "....#", "....#", ".###."],
     ".": [".....", ".....", ".....", ".....", ".....", ".....", "..#.."],
     "-": [".....", ".....", ".....", "#####", ".....", ".....", "....."],
+    "=": [".....", ".....", "#####", ".....", "#####", ".....", "....."],
+    "+": [".....", "..#..", "..#..", "#####", "..#..", "..#..", "....."],
+    ":": [".....", "..#..", ".....", ".....", "..#..", ".....", "....."],
     "_": [".....", ".....", ".....", ".....", ".....", ".....", "#####"],
     "/": ["....#", "....#", "...#.", "..#..", ".#...", "#....", "#...."],
     " ": ["....."] * 7,
@@ -404,6 +407,7 @@ class LE:
             _ls.layers.num(k).name = nm
             _ls.layers.num(k).setColor(*col)
         self._saved = False
+        self.has_used_boolean = False
 
     # -- conversion --------------------------------------------------------
     def pa(self, pts):
@@ -448,6 +452,22 @@ class LE:
 
     def array(self, parent, child, x0, y0, pitch_x, n):
         return parent.addCellrefArray(child, self.pt(x0, y0), self.pt(x0 + pitch_x, y0), n, 1)
+
+    # -- layer operations (boolean / sizing) -------------------------------
+    def layer_boolean(self, cell, layer_a, layer_b, layer_out, op="A-B"):
+        """Run boolean operation on cell: 'A-B' (difference), 'A+B' (union), 'A*B' (intersection), 'A^B' (xor).
+
+        Note: on LayoutEditor free license, using the boolean engine locks subsequent GDS export.
+        """
+        self.dr.setCell(cell)
+        self.L.booleanTool.boolOnLayer(layer_a, layer_b, layer_out, op)
+        self.has_used_boolean = True
+
+    def layer_size(self, cell, layer_src, layer_dst, delta_um, corner_type=0):
+        """Offset/size layer geometry by delta_um (positive = expand, negative = shrink)."""
+        self.dr.setCell(cell)
+        self.dr.copyLayerSized(layer_src, layer_dst, int(round(delta_um * UM)), corner_type)
+        self.has_used_boolean = True
 
     # -- export ------------------------------------------------------------
     def save_gds(self, path):

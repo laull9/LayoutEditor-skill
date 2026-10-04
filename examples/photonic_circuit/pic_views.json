@@ -1,0 +1,31 @@
+{
+  "title": "Silicon Photonics (PIC) Test Chip",
+  "order": ["11", "12", "2", "1"],
+  "views": [
+    {
+      "name": "overview_circuits",
+      "title": "PIC Overview: MZI filter, ring resonator and grating couplers",
+      "window": [100, 1200, 50, 1200]
+    },
+    {
+      "name": "mzi_filter",
+      "title": "Asymmetric MZI with directional couplers and S-bend arms",
+      "window": [350, 850, 930, 1150]
+    },
+    {
+      "name": "ring_coupler",
+      "title": "Ring resonator with 200 nm coupling gap to bus waveguide",
+      "window": [460, 540, 480, 560]
+    },
+    {
+      "name": "grating_detail",
+      "title": "Bragg grating coupler teeth and linear focus taper",
+      "window": [940, 1120, 970, 1030]
+    },
+    {
+      "name": "euler_bend",
+      "title": "Euler bend: continuous curvature 90-degree low-loss waveguide turn",
+      "window": [280, 360, 180, 260]
+    }
+  ]
+}
