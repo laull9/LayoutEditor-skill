@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-pdk_tool — work with layout-skill technology files (any Python 3.8+, no LayoutEditor).
+pdk_tool — work with layouteditor-skill technology files (any Python 3.8+, no LayoutEditor).
 
     python3 pdk_tool.py check <tech.json>
     python3 pdk_tool.py drc-rules <tech.json> <rules.json>

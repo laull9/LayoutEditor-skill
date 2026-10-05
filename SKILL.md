@@ -1,5 +1,5 @@
 ---
-name: layout-skill
+name: layouteditor-skill
 description: Script mask and IC layouts with juspertor LayoutEditor's LayoutScript Python API. Use to generate GDSII/OASIS, inspect or audit existing layouts, remap layer/datatype pairs, normalize database units, convert formats, merge files, assemble reticles or wafers, run DRC, extract netlists natively and compare them with a SPICE reference (LVS), and set up a JSON technology file from a foundry PDK. Includes MEMS, photonics, data-prep, assembly and CMOS LVS examples. Requires LayoutEditor, not KLayout.
 license: MIT
 metadata:
@@ -17,7 +17,10 @@ The examples teach distinct tasks with illustrative rules; none is a foundry-qua
 
 ## Runtime
 
-`scripts/find_layouteditor.sh` finds the interpreter that can import `LayoutScript` (`LE_PY`).
+Paths below are relative to this skill's directory; run scripts by absolute path from the
+user's working directory and write outputs there, never inside the skill.
+
+`scripts/find_layouteditor.sh` prints the interpreter that can import `LayoutScript` (`LE_PY`).
 Generators, data preparation, assembly, DRC and extraction run with it. Previews, raster checks,
 `pdk_tool.py` and `lvs_compare.py` use a separate Python (`PYTHON`) with numpy, Pillow and
 matplotlib. If LayoutEditor is missing, point to the [official download](https://layouteditor.com/download.html).
@@ -35,7 +38,7 @@ layout session per process; every script here does.
 | Mixed-die rectangular reticle or circular wafer | [Data preparation](references/data-prep-and-assembly.md); `examples/wafer_assembly/run_assembly.sh` |
 | Waveguide primitives, connected MZI, ring and shallow-etch grating | [Photonics](references/photonic-layout.md); `examples/photonic_circuit/run_pic_demo.sh` |
 | Comb actuator, isolation trenches, fillets and release masks | [SOI MEMS](references/mems-soi-process.md), [geometry](references/geometry-techniques.md); `examples/mems_comb_drive/run_mems.sh` |
-| Layer booleans or sizing | [Boolean workflow](references/boolean-workflow.md), [license limits](references/free-version-limits.md) |
+| Layer booleans or sizing | [Boolean workflow](references/boolean-workflow.md), [license limits](references/free-version-limits.md); `scripts/layer_boolean.py` |
 | DRC, raster connectivity and visual review | [Verification](references/verification.md) |
 | API failures | [API notes](references/layoutscript-api.md), [troubleshooting](references/troubleshooting.md) |
 
@@ -43,7 +46,7 @@ Pass an output directory to each runner. Every runner generates its own inputs t
 
 ## Before touching an existing file
 
-1. `layout_prep.py inspect FILE --json`: DBU, candidate tops, `layer/datatype` statistics.
+1. `"$LE_PY" scripts/layout_prep.py inspect FILE --json`: DBU, candidate tops, `layer/datatype` statistics.
 2. Several tops → choose one with the user and pass `--top` to every later step.
 3. DBU not 1 nm → `layout_prep.py normalize-dbu` into a copy. Never set `databaseunits` alone;
    that rescales the physical design.
@@ -67,7 +70,8 @@ Pass an output directory to each runner. Every runner generates its own inputs t
 - Native headless screenshots are blank. Render polygon dumps with `render_preview.py`; dumps are
   previews, not interchange files (no datatypes, properties or nets).
 - Free-edition exports add a "Generated with the LayoutEditor" text to each cell; it is not part
-  of the design. Keep explanatory text and boundaries on reference layers.
+  of the design. Ignore it when comparing outputs.
+- Keep explanatory text, die and field boundaries on reference layers, not on mask layers.
 
 ## Working procedure
 
@@ -99,7 +103,7 @@ scripts with the exported GDS. See [coverage and gaps](docs/coverage-assessment.
 ## Rebuild examples and assets
 
 ```bash
-python scripts/update_assets.py /tmp/layout-skill-examples
+python3 scripts/update_assets.py /tmp/layouteditor-skill-examples
 ```
 
 Use an analysis Python with numpy, Pillow, matplotlib and **gdstk** (verifier only). It runs all

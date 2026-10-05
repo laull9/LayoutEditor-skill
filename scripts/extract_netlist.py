@@ -17,7 +17,7 @@ extractComponent for every device -> buildConnect -> extractNetList -> read the 
 `--hierarchical` skips flattening; child cells then appear as subcircuit devices and labels
 inside them do not name top-level nets.
 
-Output (layout-skill-netlist/1):
+Output (layouteditor-skill-netlist/1):
     {"top": "NAND2", "nets": ["A", "Y", "Node_9", ...],
      "devices": [{"name": "M1", "component": "nmos", "pins": {"G": "B", "D": "Node_9", "S": "Y"}}],
      "labels": {...}, "warnings": [...]}
@@ -37,7 +37,7 @@ except ImportError:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tech import Tech  # noqa: E402
 
-LIBRARY = "layout_skill"
+LIBRARY = "layouteditor_skill"
 PROP_DEVICE, PROP_COMPONENT = 10, 20     # cellref properties set by extractComponent
 
 
@@ -147,7 +147,7 @@ def extract(layout, tech, top=None, hierarchical=False, native_dump=None):
         nt.extractedNetlistSave(os.path.abspath(native_dump), 0)
 
     return {
-        "format": "layout-skill-netlist/1",
+        "format": "layouteditor-skill-netlist/1",
         "layout": os.path.abspath(layout),
         "technology": tech.name,
         "top": top_name,

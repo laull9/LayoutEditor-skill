@@ -1,4 +1,4 @@
-# LayoutEditor-skill
+# layouteditor-skill
 
 English | [简体中文](README.zh-CN.md)
 
@@ -67,19 +67,19 @@ The scripts work equally well by hand; each one documents its command line at th
 - **Python 3.8+** with `numpy pillow matplotlib` for previews and analysis.
 
 ```bash
-npx skills add laull9/LayoutEditor-skill        # add -g for a global install
+npx skills add laull9/layouteditor-skill        # add -g for a global install
 ```
 
-Or clone it into your agent's skill folder under the name `layout-skill`:
+Or clone it into your agent's skill folder under the name `layouteditor-skill`:
 
 ```bash
-git clone https://github.com/laull9/LayoutEditor-skill ~/.claude/skills/layout-skill
+git clone https://github.com/laull9/layouteditor-skill ~/.claude/skills/layouteditor-skill
 ```
 
 Check the interpreter discovery and install the analysis packages:
 
 ```bash
-~/.claude/skills/layout-skill/scripts/find_layouteditor.sh
+~/.claude/skills/layouteditor-skill/scripts/find_layouteditor.sh
 python3 -m pip install numpy pillow matplotlib
 ```
 
@@ -137,7 +137,7 @@ refresh the images and `assets/manifest.json` with:
 
 ```bash
 python3 -m pip install numpy pillow matplotlib gdstk
-python3 scripts/update_assets.py /tmp/layout-skill-examples
+python3 scripts/update_assets.py /tmp/layouteditor-skill-examples
 ```
 
 ## License

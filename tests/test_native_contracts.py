@@ -1,5 +1,5 @@
 """Exercise negative cases and transforms against the installed native API.
-Usage: python tests/test_native_contracts.py /tmp/layout-skill-examples
+Usage: python tests/test_native_contracts.py /tmp/layouteditor-skill-examples
 """
 import copy
 import json

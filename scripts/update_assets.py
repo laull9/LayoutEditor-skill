@@ -1,6 +1,6 @@
 """Run every example, independently check GDS results, and rebuild all README PNGs.
 Usage (analysis Python with numpy/Pillow/matplotlib/gdstk):
-  python scripts/update_assets.py /tmp/layout-skill-examples
+  python scripts/update_assets.py /tmp/layouteditor-skill-examples
 LE_PY may override the LayoutEditor interpreter. Booleans are not required.
 """
 import hashlib
@@ -78,4 +78,4 @@ def update(out):
 
 
 if __name__ == '__main__':
-    update(sys.argv[1] if len(sys.argv) > 1 else '/tmp/layout-skill-examples')
+    update(sys.argv[1] if len(sys.argv) > 1 else '/tmp/layouteditor-skill-examples')

@@ -23,15 +23,15 @@ Circular GDS export still needs its own acceptance.
 The seven independent tests live in `tests/check_example_outputs.py`. Run after generating examples:
 
 ```bash
-python tests/check_example_outputs.py /tmp/layout-skill-examples
-python tests/test_native_contracts.py /tmp/layout-skill-examples
+python3 tests/check_example_outputs.py /tmp/layouteditor-skill-examples
+python3 tests/test_native_contracts.py /tmp/layouteditor-skill-examples
 ```
 
 To regenerate layouts, execute checks and refresh every PNG and its manifest:
 
 ```bash
-python -m pip install numpy pillow matplotlib gdstk
-python scripts/update_assets.py /tmp/layout-skill-examples
+python3 -m pip install numpy pillow matplotlib gdstk
+python3 scripts/update_assets.py /tmp/layouteditor-skill-examples
 ```
 
 `update_assets.py` sets `PYTHON` to its own interpreter for runners, discovers `LE_PY`, and stops

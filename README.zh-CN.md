@@ -1,4 +1,4 @@
-# LayoutEditor-skill
+# layouteditor-skill
 
 [English](README.md) | 简体中文
 
@@ -57,19 +57,19 @@ Euler 弯曲；测试结构；多种 die 混排的 reticle 和圆形 wafer 排�
 - **Python 3.8+**，安装 `numpy pillow matplotlib`，用于预览和分析。
 
 ```bash
-npx skills add laull9/LayoutEditor-skill        # 加 -g 为全局安装
+npx skills add laull9/layouteditor-skill        # 加 -g 为全局安装
 ```
 
-也可以克隆到 agent 的 skill 目录，目录名用 `layout-skill`：
+也可以克隆到 agent 的 skill 目录，目录名用 `layouteditor-skill`：
 
 ```bash
-git clone https://github.com/laull9/LayoutEditor-skill ~/.claude/skills/layout-skill
+git clone https://github.com/laull9/layouteditor-skill ~/.claude/skills/layouteditor-skill
 ```
 
 确认能找到解释器，并安装分析依赖：
 
 ```bash
-~/.claude/skills/layout-skill/scripts/find_layouteditor.sh
+~/.claude/skills/layouteditor-skill/scripts/find_layouteditor.sh
 python3 -m pip install numpy pillow matplotlib
 ```
 
@@ -120,7 +120,7 @@ python3 -m pip install numpy pillow matplotlib
 
 ```bash
 python3 -m pip install numpy pillow matplotlib gdstk
-python3 scripts/update_assets.py /tmp/layout-skill-examples
+python3 scripts/update_assets.py /tmp/layouteditor-skill-examples
 ```
 
 ## 许可

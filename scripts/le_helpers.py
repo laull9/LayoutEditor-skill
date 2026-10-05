@@ -13,7 +13,7 @@ Two layers:
 
 Usage from a generator script run with LayoutEditor's Python:
 
-    import sys, os; sys.path.insert(0, "/path/to/LayoutEditor-skill/scripts")
+    import sys, os; sys.path.insert(0, "/path/to/layouteditor-skill/scripts")
     from le_helpers import *
     le = LE(top="MY_CHIP", layers={1: ("M1_TRENCH", (230, 80, 60)), 3: ("M3_SI", (40, 140, 230))})
     le.poly(le.top, rect(0, 0, 100, 50), 3)

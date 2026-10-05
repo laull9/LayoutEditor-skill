@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-tech — load and check a layout-skill technology file (PDK description in JSON).
+tech — load and check a layouteditor-skill technology file (PDK description in JSON).
 
 Pure Python, no LayoutEditor needed. One file names every layer once and drives generation,
 layer remapping, DRC, layout audits and native extraction/LVS:

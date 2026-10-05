@@ -20,7 +20,7 @@ Run `examples/cmos_lvs/run_lvs_demo.sh OUT` to see a passing NAND2 and two faili
   conductors directly below and above it. Diffusion (`ACTIVE`) is not a conductor in this model:
   MOS-default places the device's S/D ports on the contact layer and G on poly.
 - **Devices.** Each technology device becomes a script-defined component in the library
-  `layout_skill`; extraction replaces each recognised device by a cell `<top>#<name>` carrying
+  `layouteditor_skill`; extraction replaces each recognised device by a cell `<top>#<name>` carrying
   properties 10 (device name), 20 (component) and 30 (library).
 - **Hierarchy.** By default the top is flattened into a temporary cell before extraction, so
   labels inside child cells name nets. `--hierarchical` keeps cells: LayoutEditor then reports

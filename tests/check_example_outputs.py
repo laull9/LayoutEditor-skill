@@ -1,5 +1,5 @@
 """Independently read emitted GDS/OASIS with gdstk (verification dependency only).
-Usage: python tests/check_example_outputs.py /tmp/layout-skill-v03
+Usage: python tests/check_example_outputs.py /tmp/layouteditor-skill-v03
 """
 import itertools
 import json
@@ -10,7 +10,7 @@ import unittest
 import gdstk
 import numpy as np
 
-ROOT = Path(sys.argv.pop(1)).resolve() if len(sys.argv) > 1 else Path('/tmp/layout-skill-v03')
+ROOT = Path(sys.argv.pop(1)).resolve() if len(sys.argv) > 1 else Path('/tmp/layouteditor-skill-v03')
 
 
 def cells(path):
