@@ -1,0 +1,52 @@
+{
+  "name": "demo_cmos_2m",
+  "description": "Illustrative two-metal CMOS technology for the extraction/LVS example. Not a foundry PDK.",
+  "units": {"dbu_m": 1e-9, "grid_um": 0.5},
+  "layers": {
+    "NWELL":      {"gds": [1, 0],  "color": [150, 200, 150]},
+    "PWELL":      {"gds": [2, 0],  "color": [200, 180, 150]},
+    "ACTIVE":     {"gds": [3, 0],  "color": [60, 170, 60]},
+    "POLY":       {"gds": [4, 0],  "color": [220, 60, 60]},
+    "CONTACT":    {"gds": [5, 0],  "color": [40, 40, 40]},
+    "METAL1":     {"gds": [6, 0],  "color": [70, 130, 220]},
+    "METAL1.PIN": {"gds": [6, 2]},
+    "METAL1.FILL":{"gds": [6, 22]},
+    "VIA1":       {"gds": [7, 0],  "color": [120, 60, 160]},
+    "METAL2":     {"gds": [8, 0],  "color": [230, 170, 40]},
+    "METAL2.PIN": {"gds": [8, 2]},
+    "BOUNDARY":   {"gds": [63, 0], "color": [120, 120, 120]}
+  },
+  "connectivity": {
+    "stack": ["POLY", "CONTACT", "METAL1", "VIA1", "METAL2"],
+    "ignore_datatypes": [22]
+  },
+  "devices": [
+    {
+      "name": "nmos",
+      "method": "MOS-default",
+      "layers": {"layerPoly": "POLY", "layerActive": "ACTIVE", "layerContact": "CONTACT",
+                 "layerRequiredWell": "PWELL", "layerOutsideWell": "NWELL"},
+      "ports": ["S", "D", "G"],
+      "equivalent_ports": [["S", "D"]],
+      "spice": {"prefix": "M", "models": ["nmos", "nch"], "pins": ["D", "G", "S", "B"]}
+    },
+    {
+      "name": "pmos",
+      "method": "MOS-default",
+      "layers": {"layerPoly": "POLY", "layerActive": "ACTIVE", "layerContact": "CONTACT",
+                 "layerRequiredWell": "NWELL", "layerOutsideWell": "PWELL"},
+      "ports": ["S", "D", "G"],
+      "equivalent_ports": [["S", "D"]],
+      "spice": {"prefix": "M", "models": ["pmos", "pch"], "pins": ["D", "G", "S", "B"]}
+    }
+  ],
+  "drc": [
+    {"name": "POLY width >= 2 um",        "rule": "minimumSize",            "layer": "POLY",    "value": 2, "merge": true},
+    {"name": "POLY space >= 3 um",        "rule": "minimumElementDistance", "layer": "POLY",    "value": 3, "merge": true},
+    {"name": "METAL1 width >= 3 um",      "rule": "minimumSize",            "layer": "METAL1",  "value": 3, "merge": true},
+    {"name": "METAL1 space >= 3 um",      "rule": "minimumElementDistance", "layer": "METAL1",  "value": 3, "merge": true},
+    {"name": "METAL2 width >= 4 um",      "rule": "minimumSize",            "layer": "METAL2",  "value": 4, "merge": true},
+    {"name": "METAL1 encloses CONTACT 1", "rule": "minimumEnclosure",       "layer": "METAL1",  "layer2": "CONTACT", "value": 1},
+    {"name": "METAL2 encloses VIA1 1",    "rule": "minimumEnclosure",       "layer": "METAL2",  "layer2": "VIA1",    "value": 1}
+  ]
+}

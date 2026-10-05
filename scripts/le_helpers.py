@@ -383,7 +383,9 @@ def dot_text(s, x0, y0, pitch, center=False):
 class LE:
     """Headless LayoutEditor session working in µm.
 
-    LE(top="NAME", layers={num: ("name", (r, g, b))})
+    LE(top="NAME", layers={num: ("name", (r, g, b))}, tech=None)
+      layer arguments accept a number, a (layer, datatype) pair or, with tech=Tech or a
+      technology JSON path, a layer name such as "METAL1.PIN"
       .top                       top cell (the default cell, renamed, so no empty 'noname' is left)
       .cell(name)                new cell
       .poly(cell, pts, layer)    polygon from µm points
@@ -395,14 +397,21 @@ class LE:
       .dump_flat_json(path, meta=None)  flatten in a temp cell, dump polygons/texts (call AFTER save)
     """
 
-    def __init__(self, top="TOP", layers=None):
+    def __init__(self, top="TOP", layers=None, tech=None):
         import LayoutScript as _ls  # only available in LayoutEditor's bundled Python
         self.ls = _ls
         self.L = _ls.project.newLayout()
         self.dr = self.L.drawing
         self.top = self.dr.currentCell
         self.top.cellName = top
+        if isinstance(tech, str):
+            from tech import Tech
+            tech = Tech.load(tech)
+        self.tech = tech
         self.layers = dict(layers or {})
+        if tech is not None:
+            for num, name in tech.native_names().items():
+                self.layers.setdefault(num, (name, tech.colors.get(name, (128, 128, 128))))
         for k, (nm, col) in self.layers.items():
             _ls.layers.num(k).name = nm
             _ls.layers.num(k).setColor(*col)
@@ -425,18 +434,32 @@ class LE:
         c.cellName = name
         return c
 
+    def layer(self, ref):
+        """Number, (layer, datatype) or technology layer name -> (layer, datatype)."""
+        if self.tech is not None and isinstance(ref, str):
+            return self.tech.pair(ref)
+        if isinstance(ref, (tuple, list)):
+            return int(ref[0]), int(ref[1])
+        return int(ref), 0
+
+    def _tag(self, e, ref):
+        dt = self.layer(ref)[1]
+        if dt:
+            e.datatype = dt
+        return e
+
     def poly(self, cell, pts, layer):
-        return cell.addPolygon(self.pa(pts), layer)
+        return self._tag(cell.addPolygon(self.pa(pts), self.layer(layer)[0]), layer)
 
     def polys(self, cell, list_of_pts, layer):
         for p in list_of_pts:
             self.poly(cell, p, layer)
 
     def path(self, cell, pts, layer, w):
-        return cell.addPath(self.pa(pts), layer, int(round(w * UM)))
+        return self._tag(cell.addPath(self.pa(pts), self.layer(layer)[0], int(round(w * UM))), layer)
 
     def text(self, cell, layer, x, y, s, h=None):
-        e = cell.addText(layer, self.pt(x, y), s)
+        e = self._tag(cell.addText(self.layer(layer)[0], self.pt(x, y), s), layer)
         if h:
             e.setWidth(int(round(h * UM)))
         return e
@@ -455,12 +478,12 @@ class LE:
 
     # -- layer operations (boolean / sizing) -------------------------------
     def layer_boolean(self, cell, layer_a, layer_b, layer_out, op="A-B"):
-        """Run boolean operation on cell: 'A-B' (difference), 'A+B' (union), 'A*B' (intersection), 'A^B' (xor).
+        """Run boolean operation on cell: 'A-B' (difference), 'A+B' (union), 'A*B' (intersection), 'AxorB' (xor).
 
         Note: on LayoutEditor free license, using the boolean engine locks subsequent GDS export.
         """
         self.dr.setCell(cell)
-        self.L.booleanTool.boolOnLayer(layer_a, layer_b, layer_out, op)
+        self.L.booleanTool.boolOnLayer(layer_a, layer_b, layer_out, "AxorB" if op == "A^B" else op)
         self.has_used_boolean = True
 
     def layer_size(self, cell, layer_src, layer_dst, delta_um, corner_type=0):

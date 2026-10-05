@@ -1,97 +1,103 @@
-# Layout data preparation, merging and wafer assembly
+# Data preparation and assembly
 
-Tools and workflows for handling existing layout files, merging multi-project dies, and generating dicing streets.
+Run native tools with the interpreter returned by `scripts/find_layouteditor.sh`.
 
-## 1. Inspection and conversion
+## Existing layouts
 
-### Inspect layout
-Command:
 ```bash
-python scripts/layout_prep.py inspect <input.gds> [--json]
+"$LE_PY" scripts/layout_prep.py inspect input.gds [--top CELL] --json
+"$LE_PY" scripts/layout_prep.py audit input.gds tech.json [--top CELL]
+"$LE_PY" scripts/layout_prep.py convert input.gds output.oas
+"$LE_PY" scripts/layout_prep.py remap input.gds output.gds mapping.json [--drop-unmapped]
+"$LE_PY" scripts/layout_prep.py normalize-dbu input.gds output.gds [--dbu 1e-9]
+"$LE_PY" scripts/layout_prep.py merge sources.json merged.gds TOP
 ```
-Extracts:
-- Top cell name and total cell hierarchy count.
-- Database units (e.g. `1e-9 m` = 1 nm).
-- Total element count across all cells.
-- Exact bounding box extent `[x0, y0, x1, y1]` in µm.
-- Per-layer breakdown of polygons, boxes, paths, text labels, and cell references.
 
-### Format conversion
-Command:
-```bash
-python scripts/layout_prep.py convert <input.gds> <output.dxf / output.oas / output.cif>
-```
-LayoutEditor automatically determines file format from extension.
+**Inspect** reports DBU (`dbu_is_1nm`), candidate top cells (cells nothing references), element
+counts and statistics keyed by `"layer/datatype"`; texts are counted under their texttype.
+References are counted separately and never under a layer. `bbox_um` measures the chosen top
+(`--top`, else LayoutEditor's current cell), including transformed references and path widths,
+excluding text. When `top_cells` lists several names, pass `--top` everywhere.
 
-### Layer remapping and filtering
-Command:
-```bash
-python scripts/layout_prep.py remap <input.gds> <output.gds> <mapping.json> [--drop-unmapped]
-```
-`mapping.json`:
+**Audit** compares a file with a technology file ([PDK workflow](pdk-workflow.md)): DBU,
+layer/datatype pairs the technology does not declare, declared layers that are unused, and every
+vertex, reference origin or array pitch off `units.grid_um`. Exit 1 lists the problems.
+
+**Remap** keys are pairs or bare layer numbers:
+
 ```json
-{
-  "1": 101,
-  "2": 102
-}
+{"6/2": "16/0", "6/22": [16, 22], "1": 101}
 ```
-If `--drop-unmapped` is specified, any geometry not present in the mapping dictionary is dropped from the output.
 
----
+A pair key maps exactly that pair. A bare layer key changes the layer and keeps each element's
+datatype unless the value is a pair. Pair keys win. `--drop-unmapped` deletes shapes and texts
+matched by neither form; cell references are always kept. Identity entries plus
+`--drop-unmapped` extract a layer subset.
 
-## 2. Multi-die merging (GDS Merge)
+**Normalize DBU.** Setting `databaseunits` alone keeps the integers and rescales the physical
+design (10 nm → 1 nm would shrink it tenfold). `normalize-dbu` first resizes every cell by
+old/new: shapes, path widths, reference origins and array pitches. It checks the top extent is
+unchanged. A non-integer or coarsening factor would round coordinates and is refused unless
+`--allow-rounding` is passed. Text magnification is scaled too; check label size if it matters.
 
-Command:
-```bash
-python scripts/layout_prep.py merge <spec.json> <output.gds> [TOP_NAME]
-```
-`spec.json`:
+All commands write to a temporary file beside the output and replace the output only after a
+nonempty write, so an input can be rewritten in place and a license refusal leaves nothing.
+
+A merge specification selects source tops and unique namespaces:
+
 ```json
 [
-  {"path": "mems_chip.gds", "prefix": "MEMS_", "offset": [-1500, 0], "angle": 0},
-  {"path": "pic_chip.gds", "prefix": "PIC_", "offset": [1500, 0], "angle": 0}
+  {"path":"kelvin.gds","cell":"TOP","prefix":"K_","offset":[-850,0]},
+  {"path":"line_space.gds","cell":"TOP","prefix":"LS_","offset":[850,0],"angle":0}
 ]
 ```
-Key behaviours:
-1. Imports external layout files into a master session without file corruptions.
-2. Applies namespace prefixes (`MEMS_`, `PIC_`) to avoid cell name collisions between sub-chips.
-3. Places references in a unified master top cell at specified `(x, y)` coordinate offsets and angles.
 
----
+Paths in this merge specification are relative to the shell's working directory. The demo writes
+absolute paths. Every source is renamed in its own process **before** import, so colliding `TOP`
+and `PAD` cells stay separate. Prefix conflicts and missing cells fail. Angles use CCW degrees.
+Merge sources and destination must use 1 nm DBU; normalize other files first. Source staging saves ordinary geometry; it does
+not bypass an export license refusal.
 
-## 3. Wafer and Reticle assembly
+Convert by output extension. Reopen the result and verify what matters for the task. The examples
+exercise GDS→OASIS and GDS→DXF; OASIS geometry is checked independently. The DXF example verifies
+an export was written, without claiming a lossless hierarchy/text round-trip. CIF, Gerber and
+other vendor formats need their own fixtures and checks.
 
-Command:
+## Mixed-die assembly
+
 ```bash
-python scripts/wafer_assembly.py <config.json> <output.gds> [report.txt]
+"$LE_PY" scripts/wafer_assembly.py config.json assembly.gds report.txt
 ```
 
-### Config schema (`config.json`)
 ```json
 {
-  "title": "WAFER_4INCH_ASSEMBLY",
-  "wafer_diameter_mm": 100.0,
-  "edge_exclusion_mm": 3.0,
-  "dicing_street_width_um": 80.0,
-  "street_layer": 11,
-  "wafer_boundary_layer": 11,
-  "mark_layer": 11,
-  "dies": [
-    {
-      "name": "CHIP_A",
-      "width_um": 2000.0,
-      "height_um": 2000.0,
-      "gds_path": "path/to/chip.gds",
-      "cell_name": "TOP"
-    }
+  "title":"MIXED_RETICLE",
+  "mode":"reticle",
+  "field_size_mm":[16,12],
+  "edge_exclusion_mm":0.2,
+  "dicing_street_width_um":100,
+  "pattern":["RES","FLUID"],
+  "dies":[
+    {"name":"RES","width_um":3000,"height_um":2000,"gds_path":"inputs/resistor.gds","cell_name":"DIE"},
+    {"name":"FLUID","width_um":3000,"height_um":2000,"gds_path":"inputs/mixer.gds","cell_name":"DIE"}
   ]
 }
 ```
 
-### Calculation and geometry
-1. Effective usable wafer radius:
-   $$R_{\text{eff}} = \frac{\text{wafer\_diameter}}{2} - \text{edge\_exclusion}$$
-2. Die fit condition: a die centered at $(x_c, y_c)$ is placed if and only if all four of its corners satisfy:
-   $$x_i^2 + y_i^2 \le R_{\text{eff}}^2$$
-3. Cross marks: automatically drawn in street intersections across the wafer to facilitate dicing blade optical alignment.
-4. Export gate note: on the free edition, designs with more than ~8k–10k elements will trigger the export gate. For full wafer assembly with thousands of small dies, use a commercial license or restrict the field to a test coupon / reticle size (e.g. 26 mm).
+Config source paths resolve relative to the **config file**. Sources must exist, contain the
+requested cell and fit the declared die rectangle centered at `(0,0)`. No missing-source placeholder
+is substituted. Input namespaces use each die's unique name.
+
+`mode:"wafer"` (default for older configs) uses `wafer_diameter_mm`, with a circular boundary.
+`mode:"reticle"` uses a rectangular `field_size_mm`. Both reserve edge exclusion and half a street
+around each slot. Default layers: 11 boundary reference, 21 dicing street, 22 alignment crosses.
+
+The slot width/height are the maximum die width/height; pitch adds street width. The cyclic
+`pattern` chooses one source per slot, so types share a single placement grid. Smaller dies leave
+unused slot area. This is deterministic placement, not a packing optimizer. Wafer flats, notches,
+steppers and manufacturing-specific street masks are not modeled.
+
+Outputs include GDS, `.report.json` (placements, counts, gross and usable area), `.polys.json` and
+an optional text report. Utilization measures summed declared die area divided by gross field or
+wafer area. Keep hierarchy for repeated dies. Flattening all previews/DRC can still consume large
+memory; the examples are small fields, not wafer-scale performance benchmarks.

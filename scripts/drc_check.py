@@ -45,6 +45,8 @@ def main(argv):
     L = project.newLayout()
     L.open(os.path.abspath(gds))
     dr = L.drawing
+    if abs(dr.databaseunits - 1e-9) > 1e-15:
+        raise ValueError("DRC runner requires 1 nm DBU")
     top = dr.findCell(topname)
     if top is None:
         print("top cell %r not found in %s" % (topname, gds))

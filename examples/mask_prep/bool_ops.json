@@ -1,0 +1,2 @@
+[{"op":"boolean","type":"A-B","layerA":1,"layerB":2,"target":20},
+ {"op":"size","layer":20,"delta_um":2.0,"target":21}]

@@ -1,61 +1,41 @@
-# Silicon Photonics (PIC) layout guide
+# Photonic geometry
 
-Design and generate integrated photonics mask layouts with LayoutScript and `photonic_helpers.py`.
+`scripts/photonic_helpers.py` supplies polygon geometry in µm. The example uses illustrative
+220 nm SOI conventions. It has no foundry PDK, optical mode solver or measured transfer response.
 
-## 1. Waveguide primitives
+| Function | Geometry and limits |
+|---|---|
+| `straight_waveguide` | Constant-width strip at an angle |
+| `arc_bend` | Circular strip sampled by angle; a full ring uses a keyhole seam |
+| `cosine_s_bend` | Cosine centerline with horizontal endpoint tangents; endpoint curvature is nonzero |
+| `euler_bend` | Symmetric triangular curvature; `radius_min` sets peak centerline curvature |
+| `linear_taper` | Linear width transition; adiabaticity is not checked |
+| `make_directional_coupler` | Parallel strips and S-bend port separation; no coupling ratio guarantee |
+| `make_ring_resonator` | Separate ring and bus with a specified edge gap |
+| `make_mzi` | Two couplers with a solved geometric arm length difference |
+| `make_grating_coupler` | Continuous core taper/slab on `layer`, shallow-etch slots on `etch_layer` |
 
-All primitives are generated in micrometres (µm) as closed polygon loops.
+For `cosine_s_bend(x0,y0,dx,dy,...)`,
+`y=y0+dy/2*(1-cos(pi*(x-x0)/dx))`. Its slope vanishes at both ends; its second derivative does
+not. A straight-to-cosine joint therefore retains a curvature discontinuity.
 
-### Straight waveguide
-`straight_waveguide(x0, y0, length, angle_deg=0.0, width=0.5)`
-Generates a strip waveguide polygon extending from `(x0, y0)` at angle `angle_deg` with specified width.
+For the symmetric Euler bend, length `L=2*radius_min*abs(theta)` gives peak curvature
+`1/radius_min`. Midpoint integration constructs the centerline and normal offsets construct the
+strip. Sampling and 1 nm quantization affect the final polygon. Review the chosen tolerance
+against minimum feature size; optical loss requires separate validation.
 
-### Cosine S-bend
-`cosine_s_bend(x0, y0, dx, dy, width=0.5, n=80)`
-Centerline profile:
-$$y(x) = y_0 + \frac{dy}{2} \left(1 - \cos\left(\frac{\pi (x - x_0)}{dx}\right)\right)$$
-Zero curvature at both endpoints ($d^2y/dx^2 = 0$), eliminating curvature discontinuity and transition loss when joining straight waveguides.
+`make_mzi` keeps a 60 µm arm span. Two 25 µm S-bends create a detour; bisection solves their
+sampled centerline length to match `delta_l`. External ports are at
+`x=-s_dx` and `x=2*coupler_len+4*s_dx+60`, with
+`y=+/-(s_dy+(gap+width)/2)`. Route from those coordinates. Geometric ΔL does not determine an
+optical phase or spectral response without effective/group index and wavelength.
 
-### Euler bend (clothoid curve)
-`euler_bend(radius_min, angle_deg=90.0, width=0.5, n=100)`
-In an Euler bend, curvature $\kappa(s)$ ramps linearly from zero to peak and returns symmetrically to zero:
-$$\kappa(s) \propto s$$
-This suppresses fundamental-to-higher-order mode conversion, reduces radiation loss, and minimises back-reflection compared to circular bends of the same footprint.
+Grating coupler port `(0,0)` faces a grating extending along +x. Rotate by 180° for a left-facing
+coupler. The core slab remains connected; `etch_layer` cuts shallow slots. Separate fully etched
+islands on the core layer would not describe this shallow-etch device. Etch depth, period, duty
+cycle, polarization and coupling angle must come from the process model for a real design.
 
-### Linear taper
-`linear_taper(x0, y0, w_start, w_end, length, angle_deg=0.0)`
-Smooth adiabatic transition between single-mode strip waveguide (e.g. 0.5 µm) and multi-mode or grating coupler region (e.g. 10.0–12.0 µm).
-
----
-
-## 2. Integrated components
-
-### Directional coupler
-`make_directional_coupler(le, name, length=20.0, gap=0.2, width=0.5, s_dx=30.0, s_dy=10.0, layer=1)`
-Constructs a symmetric 2×2 directional coupler cell with parallel coupling length `length` and sub-micron coupling gap `gap`. Ports are separated smoothly using cosine S-bends.
-
-### Ring resonator
-`make_ring_resonator(le, name, radius=20.0, gap=0.2, bus_length=80.0, width=0.5, layer=1)`
-Creates an all-pass ring resonator coupled to a straight bus waveguide. Coupling gap is defined from waveguide edge to ring edge.
-
-### Asymmetric Mach-Zehnder Interferometer (MZI)
-`make_mzi(le, name, delta_l=50.0, coupler_len=20.0, gap=0.2, width=0.5, s_dx=30.0, s_dy=15.0, layer=1)`
-Combines two directional couplers with unequal optical path lengths in the upper and lower arms to construct optical bandpass / interleaver filters.
-
-### Grating coupler
-`make_grating_coupler(le, name, period=0.63, duty_cycle=0.5, n_gratings=25, taper_length=150.0, wg_w=0.5, spot_w=10.0, layer=1)`
-Diffraction grating for vertical or near-vertical (8°–10°) optical fiber array coupling. Uses a linear expansion taper and sub-micron grating teeth.
-
----
-
-## 3. Recommended layer convention (220 nm SOI)
-
-| Layer | Name | Polarity | Purpose |
-|---|---|---|---|
-| 1 | `CORE_WG` | Drawn = kept silicon | Full-etch (220 nm) strip waveguides, couplers, ring resonators |
-| 2 | `ETCH_GRATING` | Drawn = etched | Shallow-etch (70 nm) Bragg grating teeth |
-| 3 | `SLAB_RIB` | Drawn = etched | Medium-etch (150 nm) rib waveguides / modulators |
-| 4 | `METAL_HEATER` | Drawn = metal | Ti/W/Pt thermo-optic phase shifters |
-| 5 | `PAD_CONTACT` | Drawn = metal | Al/Au contact pads for heater driving |
-| 11 | `DIE_BORDER` | Non-mask | Chip edge boundary (rendered as dashed outline) |
-| 12 | `TEXT_LABEL` | Non-mask | DRC-safe dot font labels |
+Example layers: 1 kept core silicon, 2 shallow etch, 11 die reference, 12 note polygons.
+`pic_drc_rules.json` checks core width ≥450 nm, core spacing ≥180 nm and etch slots ≥300 nm.
+These three illustrative rules do not form a foundry deck. Independent output checks verify
+input/output continuity, ring-bus separation, mask containment, drawn ΔL and bend radius.

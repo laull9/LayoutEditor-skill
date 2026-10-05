@@ -1,0 +1,1 @@
+[{"name":"Core width >= 450 nm","rule":"minimumSize","layer":1,"value":0.45,"merge":true},{"name":"Core gap >= 180 nm","rule":"minimumElementDistance","layer":1,"value":0.18,"merge":true},{"name":"Shallow etch slot >= 300 nm","rule":"minimumSize","layer":2,"value":0.30,"merge":true}]

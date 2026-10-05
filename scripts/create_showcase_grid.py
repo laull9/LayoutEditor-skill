@@ -1,76 +1,36 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import os
-from PIL import Image, ImageDraw, ImageFont
+"""Build the README contact sheet from reproducible example previews."""
+from pathlib import Path
+import sys
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+from matplotlib.font_manager import findfont
 
-# Load images
-img1_path = "assets/demo_core_overview.png"
-img2_path = "assets/pic_ring_coupler.png"
-img3_path = "assets/wafer_assembly.png"
-img4_path = "assets/prep_dual_chip.png"
 
-im1 = Image.open(img1_path).convert("RGBA")
-im2 = Image.open(img2_path).convert("RGBA")
-im3 = Image.open(img3_path).convert("RGBA")
-im4 = Image.open(img4_path).convert("RGBA")
+def create_grid(asset_dir):
+    asset_dir = Path(asset_dir)
+    items = [('prep_coupons.png', 'Data prep', 'Kelvin contacts + line/space monitor'),
+             ('pic_ring_coupler.png', 'Photonics', 'Ring resonator / 200 nm coupling gap'),
+             ('wafer_assembly.png', 'Mixed reticle', 'Resistor monitors + microfluidic mixers'),
+             ('demo_core_overview.png', 'SOI MEMS', 'Comb actuator + isolation + release checks'),
+             ('lvs_nand2.png', 'Extraction / LVS', 'CMOS NAND2 from a technology file'),
+             ('lvs_verification.png', 'LVS results', 'Good layout passes; short and open fail')]
+    cols, width, height, pad, head = 3, 600, 520, 24, 70
+    rows = (len(items) + cols - 1) // cols
+    canvas = Image.new('RGB', (cols * width + (cols + 1) * pad, rows * (height + head) + (rows + 1) * pad), '#eef1f5')
+    draw = ImageDraw.Draw(canvas)
+    title_font = ImageFont.truetype(findfont('DejaVu Sans'), 24)
+    detail_font = ImageFont.truetype(findfont('DejaVu Sans'), 17)
+    for i, (name, title, detail) in enumerate(items):
+        x, y = pad + (i % cols) * (width + pad), pad + (i // cols) * (height + head + pad)
+        draw.rectangle((x, y, x + width, y + head + height), fill='white')
+        draw.text((x + 18, y + 9), title, font=title_font, fill='#1b293a')
+        draw.text((x + 18, y + 41), detail, font=detail_font, fill='#526173')
+        with Image.open(asset_dir / name) as source:
+            fit = ImageOps.contain(source.convert('RGB'), (width, height), Image.Resampling.LANCZOS)
+        canvas.paste(fit, (x + (width - fit.width) // 2, y + head + (height - fit.height) // 2))
+    out = asset_dir / 'showcase_grid.png'
+    canvas.save(out, optimize=True)
+    print(out)
 
-# Cell size (width x height)
-cell_w, cell_h = 800, 560
-pad = 16
-title_h = 36
 
-# Overall grid: 2 cols x 2 rows
-total_w = cell_w * 2 + pad * 3
-total_h = (cell_h + title_h) * 2 + pad * 3
-
-grid = Image.new("RGBA", (total_w, total_h), (255, 255, 255, 255))
-draw = ImageDraw.Draw(grid)
-
-# Try loading font, fallback to default
-try:
-    font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 20)
-except Exception:
-    font = ImageFont.load_default()
-
-items = [
-    (im4, "1. Mask Data Prep (Multi-GDS Merging & Booleans)", 0, 0),
-    (im2, "2. Silicon Photonics (Ring Resonator 200 nm Gap)", 1, 0),
-    (im3, "3. Wafer & Reticle Assembly (89-Die Array & Streets)", 0, 1),
-    (im1, "4. MEMS & Micromachined Masks (Comb-Drive & Flexures)", 1, 1),
-]
-
-def fit_image(im, target_w, target_h):
-    # Fit inside target_w x target_h with white background
-    ratio = min(target_w / im.width, target_h / im.height)
-    new_w = int(im.width * ratio)
-    new_h = int(im.height * ratio)
-    resized = im.resize((new_w, new_h), Image.Resampling.LANCZOS)
-    canvas = Image.new("RGBA", (target_w, target_h), (250, 250, 252, 255))
-    offset_x = (target_w - new_w) // 2
-    offset_y = (target_h - new_h) // 2
-    canvas.paste(resized, (offset_x, offset_y), resized)
-    return canvas
-
-for im, label, col, row in items:
-    x = pad + col * (cell_w + pad)
-    y = pad + row * (cell_h + title_h + pad)
-    
-    # Draw label
-    draw.rectangle([x, y, x + cell_w, y + title_h], fill=(240, 243, 246, 255))
-    draw.text((x + 12, y + 8), label, fill=(33, 37, 41, 255), font=font)
-    
-    # Draw fitted image
-    fitted = fit_image(im, cell_w, cell_h)
-    grid.paste(fitted, (x, y + title_h), fitted)
-    
-    # Border around the whole cell
-    draw.rectangle([x, y, x + cell_w, y + title_h + cell_h], outline=(209, 213, 218, 255), width=1)
-
-# Save as optimized PNG with adaptive palette
-out_path = "assets/v0.2_showcase_grid.png"
-rgb_grid = grid.convert("RGB")
-im_q = rgb_grid.convert("P", palette=Image.Palette.ADAPTIVE, colors=256)
-im_q.save(out_path, format="PNG", optimize=True)
-
-size_kb = os.path.getsize(out_path) / 1024
-print(f"Generated {out_path}: {size_kb:.1f} KB, size: {grid.size}")
+if __name__ == '__main__':
+    create_grid(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).resolve().parents[1] / 'assets')

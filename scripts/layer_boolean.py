@@ -16,11 +16,11 @@ Boolean types:
     'A-B' (difference: A minus B)
     'A+B' (union: A or B)
     'A*B' (intersection: A and B)
-    'A^B' (xor: symmetric difference)
+    'AxorB' (xor: symmetric difference)
 
 Size operations:
     delta_um: float (positive = expand, negative = shrink)
-    corner: 0 = miter, 1 = round (approx), 2 = bevel
+    corner: 0 = miter, 1 = round (approx), 2 = octagon
 
 Note:
     Using the boolean engine trips the LayoutEditor free-edition GDS export gate.
@@ -62,6 +62,10 @@ def run_layer_operations(in_gds, out_gds, ops, top_name=None):
     if target_cell is None:
         raise ValueError("No valid cell found in %s" % in_gds)
 
+    if top_name and dr.findCell(top_name) is None:
+        raise ValueError("Requested top cell not found: " + top_name)
+    if abs(dr.databaseunits - 1e-9) > 1e-15:
+        raise ValueError("Layer operations require 1 nm DBU")
     dr.setCell(target_cell)
     bt = L.booleanTool
 
@@ -72,6 +76,9 @@ def run_layer_operations(in_gds, out_gds, ops, top_name=None):
             lay_b = int(item["layerB"])
             lay_out = int(item["target"])
             b_type = item.get("type", "A-B")
+            b_type = "AxorB" if b_type == "A^B" else b_type
+            if b_type not in ("A-B", "B-A", "A+B", "A*B", "AxorB"):
+                raise ValueError("Unknown boolean type: " + b_type)
             bt.boolOnLayer(lay_a, lay_b, lay_out, b_type)
         elif op_kind in ("size", "sizing", "offset"):
             lay_src = int(item["layer"])
@@ -81,7 +88,7 @@ def run_layer_operations(in_gds, out_gds, ops, top_name=None):
             delta_dbu = int(round(delta_um * UM))
             dr.copyLayerSized(lay_src, lay_dst, delta_dbu, corner)
         else:
-            print("Warning: skipping unknown operation kind: %s" % op_kind)
+            raise ValueError("Unknown operation kind: " + op_kind)
 
     dr.setCell(target_cell)
     if os.path.exists(out_gds):

@@ -46,8 +46,11 @@ def arc_bend(cx, cy, radius, a0_deg, a1_deg, width=0.5, step_deg=2.0):
 def cosine_s_bend(x0, y0, dx, dy, width=0.5, n=80):
     """Cosine S-bend waveguide starting at (x0, y0) with span (dx, dy).
 
-    Smoothly transitions waveguide laterally with zero curvature at both endpoints.
+    Transitions laterally with horizontal endpoint tangents.
+    Endpoint curvature is nonzero for nonzero dy; this is not a clothoid.
     """
+    if dx <= 0 or width <= 0 or n < 3:
+        raise ValueError("S-bend needs dx > 0, width > 0 and n >= 3")
     center = []
     for i in range(n):
         t = i / float(n - 1)
@@ -68,25 +71,27 @@ def euler_bend(radius_min, angle_deg=90.0, width=0.5, n=100):
     """90-degree Euler bend starting horizontally at (0, 0).
 
     Curvature ramps linearly from zero to peak and symmetrically back to zero,
-    suppressing radiation loss and higher-order mode excitation.
+    This defines geometry only; propagation loss requires an optical model.
     """
+    if radius_min <= width / 2 or width <= 0 or n < 3 or angle_deg == 0:
+        raise ValueError("Invalid Euler bend dimensions")
     theta_total = math.radians(angle_deg)
-    L = radius_min * theta_total * 1.5
+    # Triangular curvature integrates to theta; peak |kappa| = 1 / radius_min.
+    L = 2.0 * radius_min * abs(theta_total)
     ds = L / float(n - 1)
-
+    def theta(s):
+        if s <= L / 2:
+            return theta_total * 2 * (s / L) ** 2
+        return theta_total - theta_total * 2 * ((L - s) / L) ** 2
     center = []
     cur_x, cur_y = 0.0, 0.0
     for i in range(n):
-        s = i * ds
-        if s <= L / 2.0:
-            th = theta_total * 2.0 * (s / L) ** 2
-        else:
-            th = theta_total - theta_total * 2.0 * ((L - s) / L) ** 2
-        nx = -math.sin(th)
-        ny = math.cos(th)
-        center.append((cur_x, cur_y, nx, ny))
-        cur_x += ds * math.cos(th)
-        cur_y += ds * math.sin(th)
+        th = theta(i * ds)
+        center.append((cur_x, cur_y, -math.sin(th), math.cos(th)))
+        mid = theta((i + .5) * ds)
+        if i < n - 1:
+            cur_x += ds * math.cos(mid)
+            cur_y += ds * math.sin(mid)
 
     top = [(x + nx * width / 2.0, y + ny * width / 2.0) for x, y, nx, ny in center]
     bot = [(x - nx * width / 2.0, y - ny * width / 2.0) for x, y, nx, ny in reversed(center)]
@@ -150,63 +155,64 @@ def make_ring_resonator(le, name, radius=20.0, gap=0.2, bus_length=80.0, width=0
     return c
 
 
-def make_mzi(le, name, delta_l=50.0, coupler_len=20.0, gap=0.2, width=0.5, s_dx=30.0, s_dy=15.0, layer=1):
-    """Asymmetric Mach-Zehnder Interferometer (MZI) filter.
+def mzi_arm_geometry(delta_l, span=25.0, n=80):
+    """Solve detour height for a requested geometric centerline length difference."""
+    if delta_l < 0:
+        raise ValueError("delta_l must be nonnegative")
+    def length(h):
+        pts = [(span * i / (n - 1), h / 2 * (1 - math.cos(math.pi * i / (n - 1))))
+               for i in range(n)]
+        return sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(pts, pts[1:]))
+    lo, hi = 0.0, max(span, delta_l)
+    while 2 * (length(hi) - span) < delta_l:
+        hi *= 2
+    for _ in range(70):
+        mid = (lo + hi) / 2
+        if 2 * (length(mid) - span) < delta_l:
+            lo = mid
+        else:
+            hi = mid
+    height = (lo + hi) / 2
+    return height, 2 * (length(height) - span)
 
-    delta_l adds extra optical path length to the top arm.
+
+def make_mzi(le, name, delta_l=50.0, coupler_len=20.0, gap=0.2, width=0.5, s_dx=30.0, s_dy=15.0, layer=1):
+    """Two directional couplers joined by arms with geometric length difference delta_l.
+
+    External x ports: -s_dx and 2*coupler_len + 4*s_dx + 60.
+    External y ports: +/-(s_dy + (gap + width)/2). No optical response is implied.
     """
     c = le.cell(name)
-    dc1 = make_directional_coupler(le, name + "_DC1", length=coupler_len, gap=gap, width=width, s_dx=s_dx, s_dy=s_dy, layer=layer)
-    dc2 = make_directional_coupler(le, name + "_DC2", length=coupler_len, gap=gap, width=width, s_dx=s_dx, s_dy=s_dy, layer=layer)
-
-    y_top = (gap + width) / 2.0 + s_dy
-    y_bot = -y_top
-
-    # Place DC1 at origin
-    le.ref(c, dc1, 0, 0)
-
-    # Arms
-    arm_x0 = coupler_len + s_dx
-    arm_base_len = 60.0
-
-    # Top arm (longer by delta_l via double S-bend detour)
-    if delta_l > 0:
-        detour_h = math.sqrt(max(1.0, (delta_l / 2.0) ** 2))
-        le.poly(c, cosine_s_bend(arm_x0, y_top, 25.0, detour_h, width), layer)
-        le.poly(c, straight_waveguide(arm_x0 + 25.0, y_top + detour_h, arm_base_len - 50.0 + delta_l * 0.4, 0.0, width), layer)
-        arm_x_mid = arm_x0 + arm_base_len - 25.0 + delta_l * 0.4
-        le.poly(c, cosine_s_bend(arm_x_mid, y_top + detour_h, 25.0, -detour_h, width), layer)
-        dc2_x = arm_x_mid + 25.0 + s_dx
-    else:
-        le.poly(c, straight_waveguide(arm_x0, y_top, arm_base_len, 0.0, width), layer)
-        dc2_x = arm_x0 + arm_base_len + s_dx
-
-    # Bottom arm (straight reference)
-    bot_len = dc2_x - s_dx - arm_x0
-    le.poly(c, straight_waveguide(arm_x0, y_bot, bot_len, 0.0, width), layer)
-
-    # Place DC2
-    le.ref(c, dc2, dc2_x, 0)
+    dc = make_directional_coupler(le, name + "_DC", length=coupler_len, gap=gap,
+                                  width=width, s_dx=s_dx, s_dy=s_dy, layer=layer)
+    y = (gap + width) / 2 + s_dy
+    x0 = coupler_len + s_dx
+    arm_len, span = 60.0, 25.0
+    height, _ = mzi_arm_geometry(delta_l, span)
+    le.ref(c, dc, 0, 0)
+    le.poly(c, cosine_s_bend(x0, y, span, height, width), layer)
+    le.poly(c, straight_waveguide(x0 + span, y + height, arm_len - 2 * span, width=width), layer)
+    le.poly(c, cosine_s_bend(x0 + arm_len - span, y + height, span, -height, width), layer)
+    le.poly(c, straight_waveguide(x0, -y, arm_len, width=width), layer)
+    le.ref(c, dc, x0 + arm_len + s_dx, 0)
     return c
 
 
 def make_grating_coupler(le, name, period=0.63, duty_cycle=0.5, n_gratings=25,
-                          taper_length=150.0, wg_w=0.5, spot_w=10.0, layer=1):
-    """Uniform fiber grating coupler with linear focus taper."""
+                          taper_length=150.0, wg_w=0.5, spot_w=10.0, layer=1, etch_layer=2):
+    """Continuous silicon taper/slab plus shallow-etch slots on a separate layer.
+
+    Waveguide port is (0, 0); grating extends along +x. Dimensions are illustrative.
+    """
+    if period <= 0 or not 0 < duty_cycle < 1 or n_gratings < 1 or etch_layer == layer:
+        raise ValueError("Invalid grating parameters or layer polarity")
     c = le.cell(name)
-    # Taper from single-mode waveguide to wide grating area
-    le.poly(c, linear_taper(0, 0, wg_w, spot_w, taper_length, 0.0), layer)
-
-    # Grating teeth
-    x_cur = taper_length
-    tooth_w = period * duty_cycle
+    le.poly(c, linear_taper(0, 0, wg_w, spot_w, taper_length), layer)
+    end = taper_length + n_gratings * period
+    le.poly(c, [(taper_length, -spot_w / 2), (end, -spot_w / 2),
+                (end, spot_w / 2), (taper_length, spot_w / 2)], layer)
     for i in range(n_gratings):
-        # Tooth box
-        pts = [
-            (x_cur, -spot_w / 2.0), (x_cur + tooth_w, -spot_w / 2.0),
-            (x_cur + tooth_w, spot_w / 2.0), (x_cur, spot_w / 2.0)
-        ]
-        le.poly(c, pts, layer)
-        x_cur += period
-
+        x = taper_length + (i + duty_cycle) * period
+        le.poly(c, [(x, -spot_w / 2), (taper_length + (i + 1) * period, -spot_w / 2),
+                    (taper_length + (i + 1) * period, spot_w / 2), (x, spot_w / 2)], etch_layer)
     return c

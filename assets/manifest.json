@@ -1,0 +1,56 @@
+{
+  "source": "scripts/update_assets.py",
+  "layouteditor_tested_release": "20260920",
+  "checks": {
+    "independent_gds_tests": 7,
+    "native_contract_tests": 9,
+    "pic_drc_violations": 0,
+    "mems_drc_violations": 0,
+    "mems_connectivity_release": "PASS",
+    "lvs": {
+      "good": "PASS",
+      "short": "FAIL",
+      "open": "FAIL"
+    },
+    "boolean_export": "not exercised; license-dependent"
+  },
+  "assembly": {
+    "mode": "reticle",
+    "total_dies": 25,
+    "counts": {
+      "RES": 13,
+      "FLUID": 12
+    },
+    "utilization_pct": 78.125
+  },
+  "images": {
+    "assembly_die_detail.png": "f0778b10299e0b645028c62b9225fd9df392760fb77e36ad38c96b8ad9f9a737",
+    "demo_comb_detail.png": "3d2d929b71af777125bfe5eff16ee13ef10f534d6892015fc9770da5dc610e45",
+    "demo_core_overview.png": "758375beb5c96b35030a4b478e3505e1bbb62d75ce1d1f0eda226abec3d3fd4b",
+    "demo_flexure_fillet.png": "253baee7d9a14690eba49e07e4b23d12d3d825231d8de920e96f3235f99240e5",
+    "demo_verification.png": "7241406fb7b404002c988f2e37e3703c8b464bba37ac8b23836e3f6cd9394968",
+    "lvs_nand2.png": "e753fb83eb22d60f878e7d40d70642d4fbd68421183b5bd600b0269c72e3122e",
+    "lvs_verification.png": "3d6f47f9e5d315086e4b2404d500d9e0b4b110f13c48e6f2c4d2bb0a7e8443a9",
+    "pic_grating_detail.png": "815a032f7d4ec6b9b47bebb097deb337557961921eb25c7cd26f12bbbd1f137f",
+    "pic_mzi_filter.png": "dac5c0a60c25aa0e0dcf1cd1ab10400eed7243ba9493b42478915f5495a0d711",
+    "pic_overview.png": "2bbbf3ccee557119382836d987a9de4ba14373dd492312203d04d69961decbdb",
+    "pic_ring_coupler.png": "431efbf0558556ecb8eab73ebac5261dd69b51d7b7479a1f14a756ee47bff549",
+    "prep_coupons.png": "ac5da890f5752b28898099d4e5ab2455707496bd592a2d7b888cf826924c228a",
+    "showcase_grid.png": "15b72dc27f9756bb798145c1661ffc03579df1c04a9c979d21ed3218413e56d2",
+    "wafer_assembly.png": "15ba26f7f50ea4748a4db6560ae981e48322c25841e035f3a34fcf9ea9915057"
+  },
+  "outputs": {
+    "assembly/inputs/mixer.gds": "a869f1cbdca34fcdaee36da1ea46873e56716c80135540b8b0a6a9aacf344611",
+    "assembly/inputs/resistor.gds": "7620cfdf552b3a587267a4e396330d1af415e2ffbb7b66c224127df486deabf4",
+    "assembly/reticle_assembly.gds": "b787951af4323134911073808e4a63831943d776443bbaf44768cf7122ede024",
+    "lvs/nand2_good.gds": "e044decb6ee25c75015effa5f68a8deef5babbb15ac594ae47e1eaee97a5e0bb",
+    "lvs/nand2_open.gds": "f05cbc1163054f893a92dca8d682e81c52d355e97c3a7408470d25703585e63f",
+    "lvs/nand2_short.gds": "1e157a0696d7641900fc48aeebedccb3a507dce7bf17e801c1b2d86ec6cd2735",
+    "mems/demo_chip.gds": "24ac19c76204bbb677d176e9036d66cccc89e27c184528f7e64e7f61deb08061",
+    "pic/pic_chip.gds": "087484d7b981111f08a2e46986ce5261490447337ace0bbbcf302a4d46337a04",
+    "prep/dual_merged.gds": "7af75bfe0ad6dfa1597e55dff1e4eff3b15ba752ece9c4606e63404f8960b42d",
+    "prep/kelvin.gds": "645d71c16eac0a76537fc9b2d6cc286e2fcdc0f1c7c6d633539faccdb7dc78c9",
+    "prep/line_space.gds": "b006417582fccdef5b2ede5c7d4cde6181c1d04ef61b319ca0b2fc4352cdae07",
+    "prep/remapped.gds": "d7e45bac8d09f171e6b308d0af3d1319e4c1254034bcef0ed5b26c0f8e9be2ee"
+  }
+}

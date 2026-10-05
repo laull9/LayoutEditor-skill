@@ -98,7 +98,44 @@ layers.num(3).setColor(40, 140, 230)
 layers.findLayer("SI")                   # → number
 ```
 
-Datatypes exist per element (`e.setDatatype`), but separate layer numbers are simpler to script.
+On GDS import (default `setup.gdsAutoMapDatatypes = False`) `e.layerNum` is the GDS layer and
+`e.datatype` the datatype (texttype for texts). Both are writable. Cell references also carry a
+`layerNum`; ignore it. Layer names, colours, technology layers, DRC and extraction work per layer
+number, across all datatypes of that number.
+
+## Units
+
+```python
+dr.databaseunits        # metres per dbu, e.g. 1e-9; dr.userunits = dbu / display unit (0.001 for µm)
+dr.databaseunits = 1e-9 # reinterprets the integers: geometry scales physically. Do not use alone.
+cell.resize(f)          # scales one cell: shapes, path widths, ref origins, array pitches, text size
+```
+
+Normalize = `resize(old/new)` on every cell, then set `databaseunits` and `userunits = new·1e6`
+(`layout_prep.py normalize-dbu`). `drawingField.scale(...)` is a view zoom, not geometry.
+
+## Extraction and netlists
+
+```python
+layers.technologyLayerRemoveAll()
+layers.technologyLayerAdd(num, 2)                  # 2 = conductor, 1 = via
+layers.technologyLayerSetParameter(num, 0, level)  # 0: level; conductor N, via N+1, conductor N+2
+setup.addNetlistNotUseDatatype(22)                 # leave a datatype out of connectivity
+c = components.newComponent("nmos", "mylib")       # works headless; addLib()/getLibs() crash
+c.extractionMethod = "MOS-default"
+c.extractionParameter = "layerPoly=poly\nlayerActive=active\nlayerContact=contact\nports=S,D,G"
+L.extractionTool.extractComponent("nmos", "mylib") # replaces devices by <cell>#M1 refs
+nt = L.netlistTool; nt.buildConnect(); nt.extractNetList()
+n = nt.getExtractedNetList(cellname)               # netList
+n.getNodes()                                       # stringList of net names (Node_<i> if unlabelled)
+n.getNode(name) -> index; d = n.getDevice(i); d.devicename; d.cellname
+d.getConnectionNames(); d.getNode(port) -> net index
+e.getPropertyString(10 | 20 | 30)                  # on device refs: device, component, library
+nt.extractedNetlistSave(path, 0)                   # LayoutEditor dump format
+```
+
+Extraction parameters name layers by `layers.num(n).name`. Text labels on stack conductors name
+nets. See [extraction and LVS](extraction-lvs.md) for verified behaviour and limits.
 
 ## Sizing and booleans (read-only use only on the free license)
 

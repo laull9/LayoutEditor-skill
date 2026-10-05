@@ -1,18 +1,1 @@
-{
-  "title": "MPW_RETICLE_ASSEMBLY",
-  "wafer_diameter_mm": 26.0,
-  "edge_exclusion_mm": 1.0,
-  "dicing_street_width_um": 100.0,
-  "street_layer": 11,
-  "wafer_boundary_layer": 11,
-  "mark_layer": 11,
-  "dies": [
-    {
-      "name": "MEMS_CHIP",
-      "width_um": 2000.0,
-      "height_um": 2000.0,
-      "gds_path": "examples/mems_comb_drive/out/demo_chip.gds",
-      "cell_name": "DEMO_CHIP"
-    }
-  ]
-}
+{"title":"MIXED_RETICLE","mode":"reticle","field_size_mm":[16,12],"edge_exclusion_mm":0.2,"dicing_street_width_um":100,"street_layer":21,"wafer_boundary_layer":11,"mark_layer":22,"pattern":["RES","FLUID"],"dies":[{"name":"RES","width_um":3000,"height_um":2000,"gds_path":"inputs/resistor.gds","cell_name":"DIE"},{"name":"FLUID","width_um":3000,"height_um":2000,"gds_path":"inputs/mixer.gds","cell_name":"DIE"}]}

@@ -33,6 +33,11 @@ Typical first-run failures and fixes:
 
 ## 2. Connectivity, isolation, release — `scripts/check_connectivity.py`
 
+For electrical circuits with a conductor/via stack, devices and a reference netlist, use native
+extraction and LVS instead ([extraction and LVS](extraction-lvs.md)). The raster check below
+suits MEMS and other layouts where "connected" means touching material on given layers and
+where release or mechanical anchoring matters.
+
 ```bash
 python3 scripts/check_connectivity.py polys.json probes.json report.txt   # exit 1 on failure
 ```

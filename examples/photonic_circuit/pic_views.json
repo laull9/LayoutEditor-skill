@@ -5,7 +5,7 @@
     {
       "name": "overview_circuits",
       "title": "PIC Overview: MZI filter, ring resonator and grating couplers",
-      "window": [100, 1200, 50, 1200]
+      "window": [0, 1220, 50, 1250]
     },
     {
       "name": "mzi_filter",
@@ -15,16 +15,16 @@
     {
       "name": "ring_coupler",
       "title": "Ring resonator with 200 nm coupling gap to bus waveguide",
-      "window": [460, 540, 480, 560]
+      "window": [460, 540, 480, 570]
     },
     {
       "name": "grating_detail",
-      "title": "Bragg grating coupler teeth and linear focus taper",
-      "window": [940, 1120, 970, 1030]
+      "title": "Continuous core slab and separate shallow-etch slots",
+      "window": [1140, 1180, 995, 1030]
     },
     {
       "name": "euler_bend",
-      "title": "Euler bend: continuous curvature 90-degree low-loss waveguide turn",
+      "title": "Euler bend: continuous curvature 90-degree waveguide turn",
       "window": [280, 360, 180, 260]
     }
   ]
